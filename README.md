@@ -1,1 +1,3 @@
-# lugman-grr
+# Lugman-Grr
+
+A Corda demo
