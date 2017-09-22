@@ -30,13 +30,13 @@ import javax.ws.rs.core.Response
 // *****************
 @Path("template")
 class TemplateApi(val services: CordaRPCOps) {
-    // Accessible at /api/template/templateGetEndpoint.
-    @GET
-    @Path("templateGetEndpoint")
-    @Produces(MediaType.APPLICATION_JSON)
-    fun templateGetEndpoint(): Response {
-        return Response.ok(mapOf("message" to "Template GET endpoint.")).build()
-    }
+  // Accessible at /api/template/templateGetEndpoint.
+  @GET
+  @Path("templateGetEndpoint")
+  @Produces(MediaType.APPLICATION_JSON)
+  fun templateGetEndpoint(): Response {
+    return Response.ok(mapOf("message" to "Template GET endpoint.")).build()
+  }
 }
 
 // *****************
@@ -47,43 +47,53 @@ val TEMPLATE_CONTRACT_ID = "com.template.TemplateContract"
 
 class Create : CommandData
 
-class IOUContract : Contract {
-    override fun verify(tx: LedgerTransaction) {
-        val command = tx.commands.requireSingleCommand<Create>()
+interface IOUContract : Contract {
+  override fun verify(tx: LedgerTransaction) {
+    val command = tx.commands.requireSingleCommand<Create>()
 
-        requireThat {
-            // Constraints on the shape of the transaction.
-            "No inputs should be consumed when issuing an IOU." using tx.inputs.isEmpty()
-            "There should be one output state." using(tx.outputs.size == 1)
+    requireThat {
+      // Constraints on the shape of the transaction.
+      "No inputs should be consumed when issuing an IOU." using tx.inputs.isEmpty()
+      "There should be one output state." using (tx.outputs.size == 1)
 
-            // IOU-specific constraints.
-            "The output should be IOUState type." using(tx.outputs.single().data is IOUState)
-            val out = tx.outputs.single().data as IOUState
-            "The IOU's value must be non-negative." using (out.value > 0)
-            "The lender and the borrower cannot be the same entity." using (out.lender != out.borrower)
+      // IOU-specific constraints.
+      "The output should be IOUState type." using (tx.outputs.single().data is IOUState)
+      val out = tx.outputs.single().data as IOUState
+      "The IOU's value must be non-negative." using (out.value > 0)
+      "The lender and the borrower cannot be the same entity." using (out.lender != out.borrower)
 
-            // Constraints on the signers.
-            "There must only be one signer." using (command.signers.toSet().size == 1)
-            "The signer must be the lender." using (command.signers.contains(out.lender.owningKey))
-        }
+      // Constraints on the signers.
+      "There must only be one signer." using (command.signers.toSet().size == 1)
+      "The signer must be the lender." using (command.signers.contains(out.lender.owningKey))
     }
+  }
 
-    // The legal contract reference - we'll leave this as a dummy hash for now.
-    override val legalContractReference = SecureHash.zeroHash
+}
+
+class IOUContractImpl : IOUContract {
+  // The legal contract reference - we'll leave this as a dummy hash for now.
+  override val legalContractReference = SecureHash.zeroHash
 }
 
 // *********
 // * State *
 // *********
 interface IOUState : ContractState {
-    val value: Int
-    val lender: Party
-    val borrower: Party
+  val value: Int
+  val lender: Party
+  val borrower: Party
 
-    val data: String
-    override val contract get() = IOUContract()
-    override val participants get() = listOf<AbstractParty>(lender, borrower)
+  val data: String
+  override val contract get() = IOUContractImpl()
+  override val participants get() = listOf<AbstractParty>(lender, borrower)
 }
+
+class IOUStateImpl(
+    override val value: Int,
+    override val lender: Party,
+    override val borrower: Party,
+    override val data: String
+) : IOUState
 
 // *********
 // * Flows *
@@ -91,37 +101,37 @@ interface IOUState : ContractState {
 @InitiatingFlow
 @StartableByRPC
 class Initiator : FlowLogic<Unit>() {
-    @Suspendable
-    override fun call() {
-        return Unit
-    }
+  @Suspendable
+  override fun call() {
+    return Unit
+  }
 }
 
 @InitiatedBy(Initiator::class)
 class Responder(val otherParty: Party) : FlowLogic<Unit>() {
-    @Suspendable
-    override fun call() {
-        return Unit
-    }
+  @Suspendable
+  override fun call() {
+    return Unit
+  }
 }
 
 // *******************
 // * Plugin Registry *
 // *******************
 class TemplatePlugin : CordaPluginRegistry() {
-    // Whitelisting the required types for serialisation by the Corda node.
-    override fun customizeSerialization(custom: SerializationCustomization): Boolean {
-        return true
-    }
+  // Whitelisting the required types for serialisation by the Corda node.
+  override fun customizeSerialization(custom: SerializationCustomization): Boolean {
+    return true
+  }
 }
 
 class TemplateWebPlugin : WebServerPluginRegistry {
-    // A list of classes that expose web JAX-RS REST APIs.
-    override val webApis: List<Function<CordaRPCOps, out Any>> = listOf(Function(::TemplateApi))
-    //A list of directories in the resources directory that will be served by Jetty under /web.
-    // This template's web frontend is accessible at /web/template.
-    override val staticServeDirs: Map<String, String> = mapOf(
-            // This will serve the templateWeb directory in resources to /web/template
-            "template" to javaClass.classLoader.getResource("templateWeb").toExternalForm()
-    )
+  // A list of classes that expose web JAX-RS REST APIs.
+  override val webApis: List<Function<CordaRPCOps, out Any>> = listOf(Function(::TemplateApi))
+  //A list of directories in the resources directory that will be served by Jetty under /web.
+  // This template's web frontend is accessible at /web/template.
+  override val staticServeDirs: Map<String, String> = mapOf(
+      // This will serve the templateWeb directory in resources to /web/template
+      "template" to javaClass.classLoader.getResource("templateWeb").toExternalForm()
+  )
 }
