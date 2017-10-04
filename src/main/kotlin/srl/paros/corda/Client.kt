@@ -1,20 +1,14 @@
 package srl.paros.corda
 
-import net.corda.client.rpc.CordaRPCClient
-import net.corda.core.contracts.ContractState
-import net.corda.core.contracts.StateAndRef
-import net.corda.core.utilities.loggerFor
-import net.corda.core.utilities.parseNetworkHostAndPort
-import org.slf4j.Logger
-
 /**
  * Demonstration of how to use the CordaRPCClient to connect to a Corda Node and
  * stream some State data from the node.
  */
 fun main(args: Array<String>) {
-  TemplateClient().main(args)
+
 }
 
+/*
 private class TemplateClient {
   companion object {
     val logger: Logger = loggerFor<TemplateClient>()
@@ -39,3 +33,4 @@ private class TemplateClient {
     }
   }
 }
+*/
